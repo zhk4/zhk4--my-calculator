@@ -33,6 +33,21 @@
               </van-button>
               第 {{ index + 1 }} 组
             </template>
+            <!-- 产品品类 -->
+            <van-field
+              v-model="group.productType"
+              label="产品品类"
+              placeholder="请选择品类"
+              readonly
+              clickable
+              is-link
+              required
+              :rules="[{ required: true, message: '请选择产品品类' }]"
+              @click="
+                showProductPicker = true;
+                activeGroupIndex = index;
+              "
+            />
             <!-- 规格选择 -->
             <van-field
               v-model="group.city"
@@ -57,21 +72,6 @@
               required
               :rules="[{ required: true, message: '请输入单价' }]"
               style="margin-bottom: 0"
-            />
-            <!-- 产品品类 -->
-            <van-field
-              v-model="group.productType"
-              label="产品品类"
-              placeholder="请选择品类"
-              readonly
-              clickable
-              is-link
-              required
-              :rules="[{ required: true, message: '请选择产品品类' }]"
-              @click="
-                showProductPicker = true;
-                activeGroupIndex = index;
-              "
             />
 
             <!-- 长度 -->

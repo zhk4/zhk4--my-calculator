@@ -2,108 +2,161 @@
   <div class="membrane-layout">
     <!-- 返回导航栏 -->
     <van-nav-bar
-      title="胶带商品"
+      :fixed="true"
+      title="农用膜类"
       left-text="返回"
       left-arrow
       @click-left="onClickLeft"
     />
 
     <!-- 表单 -->
-    <van-form @submit="onSubmit" ref="formRef">
-      <!-- 城市选择 -->
-      <van-field
-        v-model="form.city"
-        label="胶带品类选择"
-        placeholder="请选择胶带品类"
-        readonly
-        clickable
-        is-link
-        :rules="[{ required: true, message: '请选择胶带品类' }]"
-        @click="showCityPicker = true"
-      />
-
-      <!-- 产品品类选择
-      <van-field
-        v-model="form.productType"
-        label="产品品类"
-        placeholder="请选择品类"
-        readonly
-        clickable
-        is-link
-        :rules="[{ required: true, message: '请选择产品品类' }]"
-        @click="showProductPicker = true"
-      /> -->
-
-      <!-- 步进器1 - 面积 -->
-      <van-field
-        v-model.number="form.area"
-        name="area"
-        label="数量(卷)"
-        :rules="[{ required: false, message: '请输入数量' }]"
+    <van-form ref="formRef" @submit="onSubmit">
+      <!-- 动态组列表 -->
+      <div
+        v-for="(group, index) in groups"
+        :key="index"
+        style="margin-bottom: 16px"
       >
-        <template #input>
-          <van-stepper v-model="form.area" integer min="0" max="100000" />
-        </template>
-      </van-field>
+        <van-collapse v-model="group.collapseActive">
+          <van-collapse-item :name="index.toString()">
+            <!-- 自定义标题 -->
+            <template #title>
+              <van-button
+                v-show="groups.length > 1"
+                color="linear-gradient(to right, #ff6034, #ee0a24)"
+                size="mini"
+                type="danger"
+                icon="cross"
+                style="float: left; margin-right: 10px"
+                @click.stop="removeGroup(index)"
+              >
+              </van-button>
+              第 {{ index + 1 }} 组
+            </template>
+            <!-- 产品品类 -->
+            <van-field
+              v-model="group.productType"
+              label="胶带品类"
+              placeholder="请选择品类"
+              readonly
+              clickable
+              is-link
+              required
+              :rules="[{ required: true, message: '请选择胶带品类' }]"
+              @click="
+                showProductPicker = true;
+                activeGroupIndex = index;
+              "
+            />
 
-      <!-- 步进器2 - 数量 -->
-      <!-- <van-field
-        v-model.number="form.quantity"
-        name="quantity"
-        label="宽度(m)"
-        :rules="[{ required: false, message: '请输入宽度' }]"
-      >
-        <template #input>
-          <van-stepper v-model="form.quantity" integer min="0" max="100000" />
-        </template>
-      </van-field> -->
+            <!-- 单价输入 -->
+            <van-field
+              v-model.number="group.unitPrice"
+              type="number"
+              label="单价(元/㎡)"
+              placeholder="请输入单价"
+              required
+              :rules="[{ required: true, message: '请输入单价' }]"
+              style="margin-bottom: 0"
+            />
 
-      <!-- 步进器3 - 厚度(mm) -->
-      <van-field
-        v-model.number="form.thickness"
-        name="thickness"
-        label="折扣(%)"
-        :rules="[{ required: false, message: '请输入折扣' }]"
-      >
-        <template #input>
-          <van-stepper
-            v-model="form.thickness"
-            step="0.1"
-            min="0.01"
-            max="100"
-          />
-        </template>
-      </van-field>
+            <!-- 长度 -->
+            <van-field label="数量(个)" name="area">
+              <template #input>
+                <van-stepper v-model.number="group.area" min="0" max="100000" />
+              </template>
+            </van-field>
+
+            <!-- 折扣 -->
+            <van-field label="折扣(%)" name="thickness">
+              <template #input>
+                <van-stepper
+                  v-model.number="group.thickness"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                />
+              </template>
+            </van-field>
+            <!-- 显示当前组的价格 -->
+            <div
+              v-if="
+                group.originalPrice !== null && group.discountedPrice !== null
+              "
+              style="text-align: right; padding-right: 16px; margin-top: 8px"
+            >
+              <span
+                >原价：<strong>{{ group.originalPrice }} 元</strong></span
+              ><br />
+              <span
+                >折后价：<strong>{{ group.discountedPrice }} 元</strong></span
+              >
+            </div>
+            <!-- 删除按钮 -->
+            <!-- <div style="text-align: right; padding-right: 16px">
+              <van-button
+                size="mini"
+                type="danger"
+                native-type="button"
+                @click.stop="removeGroup(index)"
+                >删除</van-button
+              >
+            </div> -->
+          </van-collapse-item>
+        </van-collapse>
+      </div>
+      <!-- 结果展示 -->
       <van-row type="flex" justify="space-around" v-if="isSubmitted">
         <van-col span="23">
           <div class="van-item-class">
-            <van-row type="flex" justify="space-around">
-              <van-col span="23" class="van-item-class-title">得出价格</van-col>
+            <van-row type="flex" justify="center">
+              <van-col span="23" class="van-item-class-title"
+                >得出价格:</van-col
+              >
             </van-row>
             <div class="bottom">
               <van-row type="flex" justify="space-around">
-                <van-col span="11" class="van-item-class-title"
-                  >商品原价：<span class="van-item-title"
+                <van-col span="11" class="van-item-class-title">
+                  商品总原价：<span class="van-item-title"
                     >{{ result.originalPrice }}元</span
                   >
                 </van-col>
-                <van-col span="11" class="van-item-class-title-2"
-                  >商品折扣价：<span class="van-item-title-2"
+                <van-col span="11" class="van-item-class-title-2">
+                  商品折后价：<span class="van-item-title-2"
                     >{{ result.discountedPrice }}元</span
-                  ></van-col
-                >
+                  >
+                </van-col>
               </van-row>
             </div>
           </div>
         </van-col>
       </van-row>
+      <!-- 添加组按钮 -->
       <div style="margin: 16px">
-        <van-button native-type="submit" round block type="info"
+        <van-button
+          native-type="button"
+          plain
+          round
+          block
+          type="primary"
+          @click="addGroup($event)"
+          icon="plus"
+          >添加一组</van-button
+        >
+      </div>
+
+      <!-- 提交按钮 -->
+      <div style="padding: 0 16px 16px">
+        <van-button
+          native-type="submit"
+          round
+          block
+          type="info"
+          icon="cash-back-record-o"
           >开 始 计 算</van-button
         >
       </div>
     </van-form>
-    <!-- 提交按钮 -->
 
     <!-- 城市选择弹窗 -->
     <van-popup v-model="showCityPicker" position="bottom">
@@ -126,32 +179,38 @@
     </van-popup>
   </div>
 </template>
-    
-    <script>
+<script>
 export default {
   name: "MembranePage",
   data() {
     return {
-      form: {
-        city: "",
-        productType: "",
-        area: 0, // 长度
-        quantity: 0, // 宽度
-        thickness: 10, // 折扣
-      },
+      // 所有组
+      groups: [
+        {
+          city: null,
+          productType: null,
+          area: 50,
+          quantity: 50,
+          thickness: 10,
+          collapseActive: ["0"], // 默认展开
+          unitPrice: null, //单价
+
+          originalPrice: 0, // 新增：原价
+          discountedPrice: 0, // 新增：折扣后价格
+        },
+      ],
+      activeGroupIndex: 0,
+
       showCityPicker: false,
       showProductPicker: false,
 
       cityColumns: ["10丝", "15丝", "20丝"],
       productColumns: ["地膜", "大棚膜", "保温膜", "防草膜"],
 
-      // 新增：计算后的价格数据
       result: {
         originalPrice: null,
         discountedPrice: null,
       },
-
-      // 是否已提交过表单（用于控制结果显示）
       isSubmitted: false,
     };
   },
@@ -160,58 +219,91 @@ export default {
       this.$router.go(-1);
     },
 
-    // 城市选择确认
+    addGroup(event) {
+      event.stopPropagation(); // 阻止事件冒泡
+      this.groups.push({
+        city: "",
+        productType: "",
+        area: 0,
+        quantity: 0,
+        thickness: 10,
+        collapseActive: [this.groups.length.toString()],
+        unitPrice: null, //单价
+
+        originalPrice: 0, // 新增：原价
+        discountedPrice: 0, // 新增：折扣后价格
+      });
+    },
+
+    removeGroup(index) {
+      if (this.groups.length > 1) {
+        this.groups.splice(index, 1);
+      }
+    },
+
     onCityConfirm(value) {
-      this.form.city = value;
+      this.groups[this.activeGroupIndex].city = value;
       this.showCityPicker = false;
     },
 
-    // 产品品类选择确认
     onProductConfirm(value) {
-      this.form.productType = value;
+      this.groups[this.activeGroupIndex].productType = value;
       this.showProductPicker = false;
     },
+    onSubmit() {
+      let totalOriginal = 0;
+      let totalDiscounted = 0;
 
-    // 表单提交
-    onSubmit(values) {
-      console.log("Form data:", this.form); // 调试信息
-      //   this.$refs.formRef.validate().then((valid) => {
-      //     if (valid) {
-
-      //     } else {
-      //       this.$toast.fail("请检查并填写所有必填项");
-      //     }
-      //   });
-      const length = this.form.area;
-      //   const width = this.form.quantity;
-      const discount = this.form.thickness;
-
-      const unitPrice = 2; // 假设单价是 2 元/㎡
-
-      const area = length;
-      const originalPrice = area * unitPrice;
-
-      // 使用 bignumber.js 进行精确计算（防止浮点误差）
       const BigNumber = require("bignumber.js");
 
-      const discountedPrice = new BigNumber(originalPrice)
-        .multipliedBy(
-          new BigNumber(1).minus(new BigNumber(discount).dividedBy(100))
-        )
-        .toFixed(2); // 保留两位小数
+      this.groups.forEach((group) => {
+        // 主膜参数
+        const length = group.area || 0;
 
-      // 更新结果并显示
-      this.result.originalPrice = originalPrice.toFixed(2);
-      this.result.discountedPrice = discountedPrice;
+        const unitPrice = group.unitPrice || 0; // 单价
+        const discountRate = 1 - (group.thickness || 0) / 100; // 折扣率
+
+        // 主膜原价 = 长 × 宽 × 单价
+        const mainOriginal = length * unitPrice;
+
+        // 折后价格 = 原价 × 折扣率
+        const groupDiscounted = new BigNumber(mainOriginal)
+          .multipliedBy(discountRate)
+          .toNumber();
+
+        // 更新当前组的价格属性
+        group.originalPrice = parseFloat(mainOriginal.toFixed(2));
+        group.discountedPrice = parseFloat(groupDiscounted.toFixed(2));
+
+        // 累加到总计
+        totalOriginal += mainOriginal;
+        totalDiscounted += groupDiscounted;
+      });
+
+      // 计算平均折扣率用于总价（可选，这里保持和之前一致）
+      const avgDiscountRate =
+        this.groups.length > 0
+          ? this.groups.reduce((sum, g) => sum + (g.thickness || 0), 0) /
+            this.groups.length
+          : 0;
+      const totalDiscountMultiplier = 1 - avgDiscountRate / 100;
+
+      // 如果你想用统一折扣率重新计算总折后价，也可以这样：
+      // const totalDiscountedWithAvg = totalOriginal * totalDiscountMultiplier;
+
+      // 更新结果
+      this.result.originalPrice = totalOriginal.toFixed(2);
+      this.result.discountedPrice = totalDiscounted.toFixed(2);
       this.isSubmitted = true;
+      console.log(this.groups, "this.groups");
 
-      this.$toast.success(`计算完成`);
+      this.$toast.success("计算完成");
     },
   },
 };
 </script>
-    
-    <style lang="scss" scoped>
+  
+<style lang="scss" scoped>
 @media (min-width: 1000px) {
   .membrane-layout {
     width: 600px;
@@ -228,7 +320,7 @@ export default {
   /* background-image: url(@/img/zhk1.png); */
   background-image: linear-gradient(to right, #6599ff, white);
   /* background-size: 100% auto;
-    background-repeat: no-repeat; */
+  background-repeat: no-repeat; */
   padding-top: 15px;
   border-radius: 5px;
 }
