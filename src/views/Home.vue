@@ -76,6 +76,11 @@ export default {
   },
   methods: {
     goToCategory(name) {
+      if (name == "historicalRecords" || name == "priceReference") {
+        // this.$notify({ type: "primary", message: "板块开发中..." });
+        this.$toast.fail("板块开发中...");
+        return;
+      }
       this.$router.push({ name: name });
     },
   },

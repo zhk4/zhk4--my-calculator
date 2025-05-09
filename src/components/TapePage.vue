@@ -3,7 +3,7 @@
     <!-- 返回导航栏 -->
     <van-nav-bar
       :fixed="true"
-      title="农用膜类"
+      title="胶带商品"
       left-text="返回"
       left-arrow
       @click-left="onClickLeft"
